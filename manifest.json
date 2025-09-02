@@ -1,0 +1,15 @@
+{
+  "name": "EdgeLens AR Diagnostics",
+  "short_name": "EdgeLens AR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#ff6b35",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
