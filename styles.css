@@ -1,0 +1,255 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #000;
+    overflow: hidden;
+    height: 100vh;
+    color: white;
+}
+
+#camera {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.scanning-frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    height: 250px;
+    border: 3px solid #00FF00;
+    border-radius: 20px;
+    z-index: 50;
+    display: none;
+    background: rgba(0, 255, 0, 0.1);
+}
+
+.scan-line {
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00FF00, transparent);
+    position: absolute;
+    animation: scan 2s ease-in-out infinite;
+}
+
+@keyframes scan {
+    0% { top: 0; }
+    100% { top: calc(100% - 3px); }
+}
+
+.status-bar {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 15px;
+    text-align: center;
+    font-weight: 600;
+    border: 2px solid rgba(0, 255, 0, 0.4);
+    backdrop-filter: blur(15px);
+    z-index: 100;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.diagnosis-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(30, 30, 30, 0.95));
+    padding: 25px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    z-index: 100;
+    display: none;
+    transform: translateY(100px);
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.diagnosis-panel.show {
+    display: block;
+    transform: translateY(0);
+}
+
+.device-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.device-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(45deg, #FF6B35, #F7931E);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+}
+
+.issue-alert {
+    background: rgba(255, 59, 48, 0.15);
+    border-left: 4px solid #FF3B30;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+    animation: pulse-alert 2s infinite;
+}
+
+@keyframes pulse-alert {
+    0%, 100% { border-color: #FF3B30; }
+    50% { border-color: #FF9500; }
+}
+
+.sensor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.sensor-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    border-left: 4px solid;
+}
+
+.sensor-card.normal { border-color: #34C759; }
+.sensor-card.warning { border-color: #FF9500; }
+.sensor-card.critical { border-color: #FF3B30; }
+
+.sensor-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.sensor-value {
+    font-size: 18px;
+    font-weight: bold;
+    font-family: 'Monaco', monospace;
+}
+
+.ai-summary {
+    background: rgba(0, 122, 255, 0.15);
+    border-left: 4px solid #007AFF;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.response-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-confirm, .btn-deny {
+    flex: 1;
+    padding: 16px 20px;
+    border: none;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-confirm {
+    background: linear-gradient(45deg, #34C759, #30D158);
+    color: white;
+}
+
+.btn-deny {
+    background: linear-gradient(45deg, #8E8E93, #636366);
+    color: white;
+}
+
+.controls {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 200;
+}
+
+.control-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+    .diagnosis-panel {
+        left: 10px;
+        right: 10px;
+        padding: 20px;
+    }
+    
+    .sensor-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .controls {
+        right: 10px;
+    }
+}

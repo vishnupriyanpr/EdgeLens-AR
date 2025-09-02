@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EdgeLens AR Diagnostics</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>EdgeLens Agentic AR - Device Diagnostics</title>
     <style>
         * {
             margin: 0;
@@ -13,760 +14,237 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
             position: relative;
         }
 
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-            min-height: 100vh;
-            position: relative;
-            z-index: 1;
+        #camera {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
-        .header {
-            background: rgba(255, 255, 255, 0.95);
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .ui-overlay {
+            position: fixed;
+            z-index: 100;
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 25px;
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        #qr-status {
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 12px;
             text-align: center;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        .header h1 {
-            color: #ff6b35;
-            margin-bottom: 10px;
-            font-size: 1.8em;
-        }
-
-        .appliance-icon {
-            font-size: 3em;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .status-card {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(5px);
-        }
-
-        .scan-btn {
-            background: linear-gradient(135deg, #ff6b35, #f7931e);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 1.1em;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 15px;
+            font-weight: 600;
+            border: 2px solid rgba(0, 255, 0, 0.3);
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
         }
 
-        .scan-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        #diagnosis-panel {
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(30, 30, 30, 0.9));
+            color: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: none;
+            transform: translateY(100px);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        .scan-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
+        #diagnosis-panel.show {
+            display: block;
+            transform: translateY(0);
         }
 
-        .qr-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 1em;
-            margin-bottom: 10px;
-        }
-
-        .sensor-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .diagnosis-header {
+            display: flex;
+            align-items: center;
             gap: 10px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .device-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(45deg, #007AFF, #34C759);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .issue-description {
+            background: rgba(255, 59, 48, 0.1);
+            border-left: 4px solid #FF3B30;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .sensor-data {
+            background: rgba(0, 122, 255, 0.1);
+            border-left: 4px solid #007AFF;
+            padding: 15px;
+            border-radius: 8px;
             margin: 15px 0;
         }
 
         .sensor-reading {
-            background: rgba(255, 255, 255, 0.8);
-            padding: 12px;
-            border-radius: 10px;
-            text-align: center;
-            border-left: 4px solid;
-        }
-
-        .sensor-reading.normal { border-color: #4caf50; }
-        .sensor-reading.warning { border-color: #ff9800; }
-        .sensor-reading.critical { border-color: #f44336; }
-
-        .sensor-label {
-            font-size: 0.8em;
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .sensor-value {
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-
-        .ai-summary {
-            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-            border-left: 5px solid #2196f3;
-        }
-
-        .ai-summary h3 {
-            color: #1976d2;
-            margin-bottom: 10px;
             display: flex;
-            align-items: center;
-            gap: 8px;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
         }
 
-        .response-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .response-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: all 0.3s ease;
-        }
-
-        .btn-yes {
-            background: #4caf50;
-            color: white;
-        }
-
-        .btn-no {
-            background: #757575;
-            color: white;
-        }
-
-        .response-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .result-card {
+        .ai-suggestion {
+            background: rgba(52, 199, 89, 0.1);
+            border-left: 4px solid #34C759;
             padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .action-buttons {
             display: flex;
-            align-items: center;
             gap: 12px;
+            margin-top: 20px;
         }
 
-        .result-card.success {
-            background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
-            border-left: 5px solid #4caf50;
-        }
-
-        .result-card.error {
-            background: linear-gradient(135deg, #ffcdd2, #ef9a9a);
-            border-left: 5px solid #f44336;
-        }
-
-        .result-card.info {
-            background: linear-gradient(135deg, #fff3e0, #ffcc80);
-            border-left: 5px solid #ff9800;
-        }
-
-        .scanner-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .scanner-frame {
-            width: 250px;
-            height: 250px;
-            border: 3px solid #ff6b35;
-            border-radius: 15px;
-            position: relative;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .scanner-line {
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #ff6b35, transparent);
-            position: absolute;
-            animation: scan 2s infinite;
-        }
-
-        @keyframes scan {
-            0% { top: 0; }
-            100% { top: 100%; }
-        }
-
-        .close-scanner {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #ff6b35;
-            color: white;
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
             border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
             cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #ff6b35;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .history-btn {
-            background: #6c757d;
+        .btn-confirm {
+            background: linear-gradient(45deg, #34C759, #30D158);
             color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            margin-top: 10px;
         }
 
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
+        .btn-deny {
+            background: linear-gradient(45deg, #FF3B30, #FF453A);
+            color: white;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .btn:active {
+            transform: scale(0.95);
         }
 
-        .slide-up {
-            animation: slideUp 0.6s ease-out;
+        .pulse {
+            animation: pulse 2s infinite;
         }
 
-        @keyframes slideUp {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        @keyframes pulse {
+            0% { border-color: rgba(0, 255, 0, 0.3); }
+            50% { border-color: rgba(0, 255, 0, 0.8); }
+            100% { border-color: rgba(0, 255, 0, 0.3); }
         }
 
-        #video {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: none;
-            z-index: 0;
-        }
-
-        #canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .ar-mode .container {
+        .scanning-indicator {
             position: absolute;
-            bottom: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 3px solid rgba(0, 255, 0, 0.3);
+            border-radius: 12px;
+            z-index: 50;
+        }
+
+        .scanning-indicator::before {
+            content: '';
+            position: absolute;
+            top: 0;
             left: 0;
             right: 0;
-            max-width: none;
-            min-height: auto;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.8);
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00FF00, transparent);
+            animation: scan-line 2s ease-in-out infinite;
         }
 
-        .ar-mode .header {
-            display: none;
+        @keyframes scan-line {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(196px); }
+        }
+
+        .unknown-device {
+            color: #FF9500;
+            background: rgba(255, 149, 0, 0.1);
+            border-left: 4px solid #FF9500;
         }
     </style>
 </head>
 <body>
-    <video id="video" playsinline></video>
-    <canvas id="canvas"></canvas>
-
-    <div class="container">
-        <div class="header">
-            <div class="appliance-icon">⚙️</div>
-            <h1>Edgelens Agentic AR</h1>
+    <video id="camera" autoplay playsinline muted></video>
+    <canvas id="overlay"></canvas>
+    <div class="scanning-indicator" id="scan-indicator"></div>
+    
+    <div class="ui-overlay" id="qr-status">
+        🔍 Position QR code within the frame to identify device
+    </div>
+    
+    <div class="ui-overlay" id="diagnosis-panel">
+        <div class="diagnosis-header">
+            <div class="device-icon">🔧</div>
+            <div id="device-name">Device Diagnosis</div>
         </div>
-
-        <div class="status-card">
-            <h3>🔍 QR Scanner</h3>
-            <input type="text" class="qr-input" id="applianceId" placeholder="Appliance ID will appear here..." readonly>
-            <button class="scan-btn" id="scanBtn">📱 Scan QR Code</button>
-            <button class="history-btn" onclick="showHistory()">📊 View History</button>
+        
+        <div class="issue-description" id="issue-info">
+            <!-- Issue will be populated here -->
         </div>
-
-        <div id="resultContainer"></div>
-        <div id="sensorContainer"></div>
-        <div id="aiContainer"></div>
+        
+        <div class="sensor-data" id="sensor-info">
+            <!-- Sensor readings will be populated here -->
+        </div>
+        
+        <div class="ai-suggestion" id="ai-response">
+            <!-- AI suggestion will be populated here -->
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn btn-confirm" onclick="handleUserResponse(true)">✓ Accurate</button>
+            <button class="btn btn-deny" onclick="handleUserResponse(false)">✗ Re-analyze</button>
+        </div>
     </div>
 
-    <div class="scanner-overlay" id="scannerOverlay">
-        <button class="close-scanner" onclick="closeScan()">✕ Close</button>
-        <div class="scanner-frame">
-            <div class="scanner-line"></div>
-        </div>
-        <p style="color: white; text-align: center; margin-top: 20px;">
-            Position QR code in the frame
-        </p>
-    </div>
-
-<script>
-const apiKey = 'YOUR_GEMINI_API_KEY'; // Replace with your actual Gemini API key
-const specificQR = 'diagnostic_mode'; // Specific QR code value (replace with actual value from PNG)
-const applianceIssues = [
-    {
-        issue: "Won't turn on",
-        description: "Power connection or internal circuitry failure",
-        sensorCheck: "voltage",
-        normalRange: "220-240V",
-        symptom: "No power detected",
-        arOverlay: "Check power cord"
-    },
-    {
-        issue: "Takes too long to boil/overheating",
-        description: "Heating element efficiency degraded or temperature sensor malfunction",
-        sensorCheck: "temperature",
-        normalRange: "95-100°C",
-        symptom: "Temperature rises slowly or exceeds safe limits",
-        arOverlay: "Check heating element"
-    },
-    {
-        issue: "Leaking from the body",
-        description: "Seal degradation or structural damage",
-        sensorCheck: "pressure",
-        normalRange: "1.2-1.5 atm",
-        symptom: "Abnormal pressure readings",
-        arOverlay: "Inspect seals"
-    },
-    {
-        issue: "Auto-shutoff not working",
-        description: "Temperature sensor or control circuit failure",
-        sensorCheck: "control_signal",
-        normalRange: "3.3-5V",
-        symptom: "Control signal remains active beyond threshold",
-        arOverlay: "Check auto-shutoff"
-    }
-];
-
-let currentIssue = null;
-let applianceConfirmed = false;
-let isScanning = false;
-let arMode = false;
-let video = document.getElementById('video');
-let canvas = document.getElementById('canvas');
-let ctx = canvas.getContext('2d');
-let stream = null;
-
-async function startQRScan() {
-    document.getElementById('scannerOverlay').style.display = 'flex';
-    document.getElementById('scanBtn').disabled = true;
-
-    try {
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
-        });
-        video.srcObject = stream;
-        video.play();
-        video.style.display = 'block';
-        canvas.style.display = 'block';
-        isScanning = true;
-        requestAnimationFrame(scanQR);
-    } catch (err) {
-        showResult('❌ Camera access denied. Please allow camera permissions.', 'error');
-        closeScan();
-    }
-}
-
-function closeScan() {
-    document.getElementById('scannerOverlay').style.display = 'none';
-    document.getElementById('scanBtn').disabled = false;
-    if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-    }
-    video.style.display = 'none';
-    canvas.style.display = 'none';
-    isScanning = false;
-    arMode = false;
-    document.body.classList.remove('ar-mode');
-}
-
-function scanQR() {
-    if (!isScanning || video.readyState !== video.HAVE_ENOUGH_DATA) {
-        requestAnimationFrame(scanQR);
-        return;
-    }
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-    if (code && code.data.trim() === specificQR) {
-        isScanning = false;
-        document.getElementById('applianceId').value = code.data;
-        showResult('✅ QR code detected! Detecting appliance...', 'success');
-        document.getElementById('scannerOverlay').style.display = 'none';
-        detectAppliance();
-    } else {
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = '#ff6b35';
-        ctx.strokeRect(50, 100, canvas.width - 100, canvas.height - 200);
-        requestAnimationFrame(scanQR);
-    }
-}
-
-async function detectAppliance() {
-    showResult('🔄 <span class="loading"></span> Analyzing camera feed with AI...', 'info');
-
-    const base64Image = canvas.toDataURL('image/jpeg').split(',')[1];
-
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { text: 'Does this image contain a kettle? Respond with only "Yes" or "No".' },
-                        { inlineData: { mimeType: 'image/jpeg', data: base64Image } }
-                    ]
-                }]
-            })
-        });
-
-        const result = await response.json();
-        const detection = result.candidates[0].content.parts[0].text.trim().toLowerCase();
-
-        if (detection === 'yes') {
-            applianceConfirmed = true;
-            document.body.classList.add('ar-mode');
-            arMode = true;
-            showResult('✅ Kettle detected! Running diagnostics...', 'success');
-            setTimeout(runDiagnostics, 1500);
-            requestAnimationFrame(arOverlayLoop);
-        } else {
-            showResult('❌ No kettle detected. Please point the camera at a kettle.', 'error');
-            closeScan();
-        }
-    } catch (error) {
-        console.error('Detection error:', error);
-        showResult('❌ Failed to analyze image. Please try again.', 'error');
-        closeScan();
-    }
-}
-
-async function arOverlayLoop() {
-    if (!arMode || video.readyState !== video.HAVE_ENOUGH_DATA) {
-        requestAnimationFrame(arOverlayLoop);
-        return;
-    }
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const base64Image = canvas.toDataURL('image/jpeg').split(',')[1];
-
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { text: 'Locate the kettle in this image and provide bounding box coordinates in the format: [x, y, width, height]. If no kettle is found, return [].' },
-                        { inlineData: { mimeType: 'image/jpeg', data: base64Image } }
-                    ]
-                }]
-            })
-        });
-
-        const result = await response.json();
-        const bbox = JSON.parse(result.candidates[0].content.parts[0].text);
-
-        if (bbox.length) {
-            const [x, y, width, height] = bbox;
-            ctx.strokeStyle = '#ff6b35';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(x, y, width, height);
-            ctx.fillStyle = '#ff6b35';
-            ctx.font = '18px Arial';
-            ctx.fillText(currentIssue.arOverlay || 'Diagnostic Overlay', x, y - 10);
-        }
-
-        requestAnimationFrame(arOverlayLoop);
-    } catch (error) {
-        console.error('AR overlay error:', error);
-        requestAnimationFrame(arOverlayLoop);
-    }
-}
-
-async function runDiagnostics() {
-    showResult('🔄 <span class="loading"></span> Analyzing sensor data with AI...', 'info');
-
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: 'Generate a random kettle issue with description, sensor check, normal range, symptom, and AR overlay instruction. Format as JSON: {"issue": "", "description": "", "sensorCheck": "", "normalRange": "", "symptom": "", "arOverlay": ""}'
-                    }]
-                }]
-            })
-        });
-
-        const result = await response.json();
-        currentIssue = JSON.parse(result.candidates[0].content.parts[0].text);
-
-        if (!currentIssue.issue) {
-            currentIssue = applianceIssues[Math.floor(Math.random() * applianceIssues.length)];
-        }
-
-        showSensorReadings(currentIssue);
-        showAISummary(currentIssue);
-        saveToHistory(currentIssue);
-    } catch (error) {
-        console.error('Diagnostics error:', error);
-        currentIssue = applianceIssues[Math.floor(Math.random() * applianceIssues.length)];
-        showSensorReadings(currentIssue);
-        showAISummary(currentIssue);
-        saveToHistory(currentIssue);
-    }
-}
-
-function showSensorReadings(issue) {
-    const sensorData = generateSensorData(issue);
-
-    const sensorHtml = `
-        <div class="status-card slide-up">
-            <h3>📊 Live Sensor Readings</h3>
-            <div class="sensor-grid">
-                ${Object.entries(sensorData).map(([key, value]) => `
-                    <div class="sensor-reading ${getSensorStatus(key, value)}">
-                        <div class="sensor-label">${formatSensorName(key)}</div>
-                        <div class="sensor-value">${value}</div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-
-    document.getElementById('sensorContainer').innerHTML = sensorHtml;
-}
-
-function generateSensorData(issue) {
-    const random = Math.random;
-
-    switch (issue.sensorCheck) {
-        case 'voltage':
-            return {
-                voltage: `${(180 + random() * 20).toFixed(1)}V`,
-                current: `${(random() * 0.5).toFixed(2)}A`,
-                power: `${(800 + random() * 200).toFixed(0)}W`,
-                status: 'Critical'
-            };
-        case 'temperature':
-            return {
-                temperature: `${(110 + random() * 15).toFixed(1)}°C`,
-                heating_time: `${(8 + random() * 5).toFixed(1)} min`,
-                efficiency: `${(45 + random() * 15).toFixed(0)}%`,
-                status: 'Warning'
-            };
-        case 'pressure':
-            return {
-                pressure: `${(0.8 + random() * 0.3).toFixed(2)} atm`,
-                water_level: `${(60 + random() * 30).toFixed(0)}%`,
-                leak_rate: `${(random() * 5).toFixed(1)} ml/min`,
-                status: 'Critical'
-            };
-        case 'control_signal':
-            return {
-                control_voltage: `${(6 + random() * 2).toFixed(1)}V`,
-                auto_shutoff: 'Disabled',
-                safety_circuit: 'Bypassed',
-                status: 'Critical'
-            };
-        default:
-            return {};
-    }
-}
-
-function getSensorStatus(key, value) {
-    if (key === 'status') {
-        return value.toLowerCase();
-    }
-    return 'normal';
-}
-
-function formatSensorName(name) {
-    return name.replace(/_/g, ' ').toUpperCase();
-}
-
-async function showAISummary(issue) {
-    const aiHtml = `
-        <div class="ai-summary fade-in">
-            <h3>🤖 AI Diagnostic Summary</h3>
-            <p><strong>Detected Issue:</strong> ${issue.issue}</p>
-            <p><strong>Analysis:</strong> ${issue.description}</p>
-            <p><strong>Sensor Finding:</strong> ${issue.symptom}</p>
-            <p><strong>Recommendation:</strong> This issue requires immediate attention. Would you like detailed troubleshooting steps?</p>
-            <div class="response-buttons">
-                <button class="response-btn btn-yes" onclick="handleResponse(true)">✅ Yes, Help Me</button>
-                <button class="response-btn btn-no" onclick="handleResponse(false)">🤔 Not Sure</button>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('aiContainer').innerHTML = aiHtml;
-}
-
-async function handleResponse(confirmed) {
-    if (confirmed) {
-        showResult('🔄 <span class="loading"></span> Generating troubleshooting steps...', 'info');
-
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: `Provide detailed troubleshooting steps for the following kettle issue: "${currentIssue.issue}". Format as a single concise paragraph.`
-                        }]
-                    }]
-                })
-            });
-
-            const result = await response.json();
-            const solution = result.candidates[0].content.parts[0].text;
-
-            showResult(`💡 ${solution}`, 'success');
-        } catch (error) {
-            console.error('Solution error:', error);
-            showResult('💡 Check basic connections and contact support for professional assistance.', 'success');
-        }
-    } else {
-        showResult('🔄 Running secondary diagnostics... Please try basic troubleshooting steps or contact customer support.', 'info');
-    }
-}
-
-function showResult(message, type) {
-    const resultHtml = `
-        <div class="result-card ${type} fade-in">
-            <div>${message}</div>
-        </div>
-    `;
-
-    document.getElementById('resultContainer').innerHTML = resultHtml;
-}
-
-function saveToHistory(issue) {
-    const history = JSON.parse(localStorage.getItem('applianceHistory') || '[]');
-    history.unshift({
-        applianceId: document.getElementById('applianceId').value,
-        issue: issue.issue,
-        timestamp: new Date().toLocaleString(),
-        sensorData: generateSensorData(issue)
-    });
-
-    if (history.length > 10) {
-        history.splice(10);
-    }
-
-    localStorage.setItem('applianceHistory', JSON.stringify(history));
-}
-
-function showHistory() {
-    const history = JSON.parse(localStorage.getItem('applianceHistory') || '[]');
-
-    if (history.length === 0) {
-        showResult('📝 No diagnostic history available yet.', 'info');
-        return;
-    }
-
-    const historyHtml = `
-        <div class="status-card fade-in">
-            <h3>📊 Diagnostic History</h3>
-            ${history.map(record => `
-                <div style="background: rgba(0,0,0,0.05); padding: 10px; margin: 8px 0; border-radius: 8px;">
-                    <strong>${record.issue}</strong><br>
-                    <small>Appliance: ${record.applianceId}</small><br>
-                    <small>Time: ${record.timestamp}</small>
-                </div>
-            `).join('')}
-            <button class="scan-btn" onclick="clearHistory()" style="background: #dc3545; margin-top: 10px;">
-                🗑️ Clear History
-            </button>
-        </div>
-    `;
-
-    document.getElementById('resultContainer').innerHTML = historyHtml;
-}
-
-function clearHistory() {
-    localStorage.removeItem('applianceHistory');
-    showResult('✅ History cleared successfully!', 'success');
-}
-
-// Initialize
-window.onload = function() {
-    showResult('👋 Welcome! Scan the QR code to begin diagnostics.', 'info');
-    document.getElementById('scanBtn').addEventListener('click', startQRScan);
-};
-</script>
+    <!-- Load jsQR Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
